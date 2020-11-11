@@ -42,7 +42,7 @@ log
  ;
 
 expr
- : expr POW<assoc=right> expr           #powExpr
+ : <assoc=right> expr POW expr                        #powExpr
  | MINUS expr                           #unaryMinusExpr
  | NOT expr                             #notExpr
  | expr op=(MULT | DIV | MOD) expr      #multiplicationExpr

@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.misc.NotNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.*;
 
 public class EvalVisitor extends MuBaseVisitor<Value> {
 
@@ -35,10 +36,44 @@ public class EvalVisitor extends MuBaseVisitor<Value> {
     // atom overrides
     @Override
     public Value visitStringAtom(MuParser.StringAtomContext ctx) {
+        
         String str = ctx.getText();
+        
         // strip quotes
         str = str.substring(1, str.length() - 1).replace("\"\"", "\"");
-        return new Value(str);
+        
+        // Variable interpolation with ${var} inside string
+        Pattern pattern = Pattern.compile("\\$\\{([a-zA-Z_]{1,}[a-zA-Z0-9_]*)\\}");
+        Matcher matcher = pattern.matcher(str);
+        String newStr = str;
+        
+        while (matcher.find()) {
+            
+            String entireMatch = matcher.group();
+            String m = matcher.group(1);
+            // Debug:
+            // System.err.println("Found regex match visitStringAtom(): " + m);
+            
+            // Look up variable
+            Value value = memory.get(m);
+            String replacement = "";
+            
+            // No such variable in global scope...
+            if (value == null) {
+                replacement = "nil";
+                // continue;
+            }
+            else {
+                replacement = value.asString();
+            }
+            
+            // Quote the entireMatch, or get an illegal repetition error
+            // about {variable} being in the regex argument to replaceAll
+            newStr = newStr.replaceAll(Pattern.quote(entireMatch), replacement);
+        }
+
+        // Return string with interpolated values
+        return new Value(newStr);
     }
 
     @Override
